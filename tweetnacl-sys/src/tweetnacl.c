@@ -1,4 +1,14 @@
 #include "tweetnacl.h"
+
+#ifdef _MSC_VER
+#define USE_MY_RANDOMBYTES
+#endif
+
+#ifdef USE_MY_RANDOMBYTES
+#include <stdlib.h>
+#include <time.h>
+#endif
+
 #define FOR(i,n) for (i = 0;i < n;++i)
 #define sv static void
 
@@ -7,7 +17,33 @@ typedef unsigned long u32;
 typedef unsigned long long u64;
 typedef long long i64;
 typedef i64 gf[16];
+
+#ifdef USE_MY_RANDOMBYTES
+void randombytes(u8 *data, u64 len) {
+  static int initialized = 0;
+  if(!initialized) {
+    initialized = 1;
+    srand(time(NULL));
+  }
+
+  int iter_count = len / sizeof(int);
+  for(int i = 0 ; i < iter_count ; i++) {
+    union {
+      int random;
+      u8 bytes[sizeof(int)];
+    } u;
+
+    u.random = rand();
+    int base_idx = i * sizeof(int);
+    for(int j = 0 ; j < sizeof(int) ; j++) {
+      int idx = base_idx + j;
+      data[idx] = u.bytes[j];
+    }
+  }
+}
+#else
 extern void randombytes(u8 *,u64);
+#endif
 
 static const u8
   _0[16],
